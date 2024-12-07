@@ -1,0 +1,403 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+
+// Main Application Frame
+public class EHealthManagementSystem extends JFrame {
+    public EHealthManagementSystem() {
+        setTitle("E-Health Management System");
+        setSize(900, 700);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        // Main Panel
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BorderLayout());
+        mainPanel.setBackground(new Color(255, 224, 255)); // Light Pink background
+
+        // Header
+        JLabel welcomeLabel = new JLabel("E-Health Management System", SwingConstants.CENTER);
+        welcomeLabel.setFont(new Font("Arial", Font.BOLD, 28));
+        welcomeLabel.setForeground(new Color(128, 0, 128)); // Purple text
+        mainPanel.add(welcomeLabel, BorderLayout.NORTH);
+
+        // Tabbed Pane for different functionalities
+        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.setFont(new Font("Arial", Font.PLAIN, 18));
+
+        ManagementPanel managementPanel = new ManagementPanel();
+        tabbedPane.addTab("Management", managementPanel);
+        tabbedPane.addTab("Search Patient", new SearchPatientPanel(managementPanel.getPatientList()));
+        tabbedPane.addTab("Communication", new CommunicationPanel());
+
+        mainPanel.add(tabbedPane, BorderLayout.CENTER);
+        add(mainPanel);
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            EHealthManagementSystem frame = new EHealthManagementSystem();
+            frame.setVisible(true);
+        });
+    }
+}
+
+// Management Panel
+class ManagementPanel extends JPanel {
+    private PatientManagementPanel patientPanel;
+    private AppointmentManagementPanel appointmentPanel;
+
+    public ManagementPanel() {
+        setLayout(new BorderLayout());
+        patientPanel = new PatientManagementPanel();
+        appointmentPanel = new AppointmentManagementPanel(patientPanel);
+
+        JTabbedPane managementTabbedPane = new JTabbedPane();
+        managementTabbedPane.addTab("Patient Management", patientPanel);
+        managementTabbedPane.addTab("Appointment Management", appointmentPanel);
+
+        add(managementTabbedPane, BorderLayout.CENTER);
+    }
+
+    public ArrayList<Patient> getPatientList() {
+        return patientPanel.getPatients();
+    }
+}
+
+// Patient Management Panel
+class PatientManagementPanel extends JPanel {
+    private JTextField idField;
+    private JTextField nameField;
+    private JTextField ageField;
+    private JTextArea recordArea;
+    private ArrayList<Patient> patients; // List of patients
+
+    public PatientManagementPanel() {
+        patients = new ArrayList<>();
+        setLayout(new GridBagLayout());
+        setBackground(new Color(255, 228, 225)); // Light Pink background
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Patient ID field
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        add(new JLabel("Patient ID:"), gbc);
+
+        gbc.gridx = 1;
+        idField = new JTextField(10);
+        add(idField, gbc);
+
+        // Patient Name field
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        add(new JLabel("Patient Name:"), gbc);
+
+        gbc.gridx = 1;
+        nameField = new JTextField(15);
+        add(nameField, gbc);
+
+        // Patient Age field
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        add(new JLabel("Patient Age:"), gbc);
+
+        gbc.gridx = 1;
+        ageField = new JTextField(5);
+        add(ageField, gbc);
+
+        // Buttons
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        JButton addButton = new JButton("Add Patient");
+        addButton.addActionListener(e -> addPatient());
+        add(addButton, gbc);
+
+        gbc.gridx = 1;
+        JButton viewButton = new JButton("View Patients");
+        viewButton.addActionListener(e -> viewPatients());
+        add(viewButton, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        JButton clearButton = new JButton("Clear Fields");
+        clearButton.addActionListener(e -> clearFields());
+        add(clearButton, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        gbc.gridwidth = 2;
+        recordArea = new JTextArea(10, 30);
+        recordArea.setEditable(false);
+        add(new JScrollPane(recordArea), gbc);
+    }
+
+    public ArrayList<Patient> getPatients() {
+        return patients;
+    }
+
+    private void addPatient() {
+        String id = idField.getText();
+        String name = nameField.getText();
+        String age = ageField.getText();
+        if (!id.isEmpty() && !name.isEmpty() && !age.isEmpty()) {
+            try {
+                int ageValue = Integer.parseInt(age);
+                patients.add(new Patient(id, name, ageValue));
+                recordArea.append("Added Patient: " + name + " (ID: " + id + ", Age: " + age + ")\n");
+                clearFields(); // Clear fields after adding
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Please enter a valid age");
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Please fill all fields");
+        }
+    }
+
+    private void viewPatients() {
+        recordArea.setText(""); // Clear previous records
+        for (Patient patient : patients) {
+            recordArea.append("Patient: " + patient.getName() + " (ID: " + patient.getId() + ", Age: " + patient.getAge() + ")\n");
+        }
+    }
+
+    private void clearFields() {
+        idField.setText("");
+        nameField.setText("");
+        ageField.setText("");
+        recordArea.setText("");
+    }
+}
+
+// Search Patient Panel
+class SearchPatientPanel extends JPanel {
+    private JTextField searchField;
+    private JTextArea resultArea;
+    private ArrayList<Patient> patients;
+
+    public SearchPatientPanel(ArrayList<Patient> patients) {
+        this.patients = patients;
+        setLayout(new GridBagLayout());
+        setBackground(new Color(255, 240, 245)); // Light Pink background
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Search Field
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        add(new JLabel("Enter Patient ID to Search:"), gbc);
+
+        gbc.gridx = 1;
+        searchField = new JTextField(10);
+        add(searchField, gbc);
+
+        // Search Button
+        gbc.gridx = 2;
+        JButton searchButton = new JButton("Search");
+        searchButton.addActionListener(e -> searchPatient());
+        add(searchButton, gbc);
+
+        // Result Area
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 3;
+        resultArea = new JTextArea(10, 30);
+        resultArea.setEditable(false);
+        add(new JScrollPane(resultArea), gbc);
+    }
+
+    private void searchPatient() {
+        String searchId = searchField.getText();
+        boolean found = false;
+        for (Patient patient : patients) {
+            if (patient.getId().equalsIgnoreCase(searchId)) {
+                resultArea.setText("Found Patient: " + patient.getName() + " (ID: " + patient.getId() + ", Age: " + patient.getAge() + ")\n");
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            resultArea.setText("Patient not found.");
+        }
+    }
+}
+
+// Appointment Management Panel
+class AppointmentManagementPanel extends JPanel {
+    private JTextField patientIdField;
+    private JTextArea appointmentArea;
+    private ArrayList<Appointment> appointments;
+    private PatientManagementPanel patientPanel;
+    private JComboBox<String> dateComboBox;
+    private JComboBox<String> serviceComboBox;
+
+    public AppointmentManagementPanel(PatientManagementPanel patientPanel) {
+        this.patientPanel = patientPanel;
+        appointments = new ArrayList<>();
+        setLayout(new GridBagLayout());
+        setBackground(new Color(255, 255, 255)); // White background
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Appointment fields
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        add(new JLabel("Patient ID:"), gbc);
+
+        gbc.gridx = 1;
+        patientIdField = new JTextField(10);
+        add(patientIdField, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        add(new JLabel("Appointment Date:"), gbc);
+
+        gbc.gridx = 1;
+        dateComboBox = createDateComboBox();
+        add(dateComboBox, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        add(new JLabel("Medical Service:"), gbc);
+
+        gbc.gridx = 1;
+        serviceComboBox = createServiceComboBox();
+        add(serviceComboBox, gbc);
+
+        // Buttons
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        JButton addButton = new JButton("Schedule Appointment");
+        addButton.addActionListener(e -> scheduleAppointment());
+        add(addButton, gbc);
+
+        gbc.gridx = 1;
+        JButton viewButton = new JButton("View Appointments");
+        viewButton.addActionListener(e -> viewAppointments());
+        add(viewButton, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        gbc.gridwidth = 2;
+        appointmentArea = new JTextArea(10, 30);
+        appointmentArea.setEditable(false);
+        add(new JScrollPane(appointmentArea), gbc);
+    }
+
+    private JComboBox<String> createDateComboBox() {
+        JComboBox<String> comboBox = new JComboBox<>();
+        Calendar calendar = Calendar.getInstance();
+        int daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
+        for (int i = 1; i <= daysInMonth; i++) {
+            comboBox.addItem(i + "/" + (calendar.get(Calendar.MONTH) + 1) + "/" + calendar.get(Calendar.YEAR));
+        }
+        return comboBox;
+    }
+
+    private JComboBox<String> createServiceComboBox() {
+        JComboBox<String> comboBox = new JComboBox<>();
+        comboBox.addItem("General Checkup");
+        comboBox.addItem("Dental Checkup");
+        comboBox.addItem("Blood Test");
+        comboBox.addItem("X-Ray");
+        comboBox.addItem("Vaccination");
+        return comboBox;
+    }
+
+    private void scheduleAppointment() {
+        String patientId = patientIdField.getText();
+        String date = (String) dateComboBox.getSelectedItem();
+        String service = (String) serviceComboBox.getSelectedItem();
+
+        for (Patient patient : patientPanel.getPatients()) {
+            if (patient.getId().equalsIgnoreCase(patientId)) {
+                appointments.add(new Appointment(patientId, date, service)); // Updated to include service
+                JOptionPane.showMessageDialog(this, "Appointment scheduled for " + patient.getName() + " for " + service);
+                clearFields();
+                return;
+            }
+        }
+        JOptionPane.showMessageDialog(this, "Patient ID not found.");
+    }
+
+    private void viewAppointments() {
+        appointmentArea.setText(""); // Clear previous appointments
+        for (Appointment appointment : appointments) {
+            appointmentArea.append("Appointment for Patient ID: " + appointment.getPatientId() + 
+                                   " on " + appointment.getDate() + 
+                                   " for service: " + appointment.getService() + "\n"); // Updated to show service
+        }
+    }
+
+    private void clearFields() {
+        patientIdField.setText("");
+        dateComboBox.setSelectedIndex(0); // Reset to first date
+        serviceComboBox.setSelectedIndex(0); // Reset to first service
+    }
+}
+
+// Patient Class
+class Patient {
+    private String id;
+    private String name;
+    private int age;
+
+    public Patient(String id, String name, int age) {
+        this.id = id;
+        this.name = name;
+        this.age = age;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+}
+
+// Appointment Class
+class Appointment {
+    private String patientId;
+    private String date;
+    private String service; // Added service field
+
+    public Appointment(String patientId, String date, String service) {
+        this.patientId = patientId;
+        this.date = date;
+        this.service = service; // Initialize service
+    }
+
+    public String getPatientId() {
+        return patientId;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public String getService() { // Getter for service
+        return service;
+    }
+}
+
+// Communication Panel
+class CommunicationPanel extends JPanel {
+    public CommunicationPanel() {
+        setBackground(new Color(240, 255, 240)); // Light Green background
+        add(new JLabel("Communication with Patients"));
+    }
+}
